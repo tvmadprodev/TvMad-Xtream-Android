@@ -1,0 +1,57 @@
+name: Build TvMad-Xtream Android Beta APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'TvMad-Xtream_Android_Beta_0.1_PROJECT.zip'
+      - '.github/workflows/build-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-debug-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Unpack TvMad-Xtream project
+        run: |
+          rm -rf build-project
+          mkdir build-project
+          unzip -q TvMad-Xtream_Android_Beta_0.1_PROJECT.zip -d build-project
+
+      - name: Build debug APK
+        working-directory: build-project
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Prepare APK artifact
+        run: |
+          mkdir -p dist
+          cp build-project/app/build/outputs/apk/debug/app-debug.apk dist/TvMad-Xtream-Android-Beta-0.1.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TvMad-Xtream-Android-Beta-0.1-APK
+          path: dist/TvMad-Xtream-Android-Beta-0.1.apk
+          if-no-files-found: error
+          retention-days: 30
